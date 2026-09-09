@@ -549,15 +549,20 @@ suites/
 └── catfood/
     ├── SUITE.md
     ├── cases/
-    │   ├── E01-trend-detection.json
-    │   ├── E02-source-verification.json
-    │   ├── E03-price-analysis.json
-    │   ├── E04-behavioral-mechanism.json
-    │   ├── E05-sycophancy.json
+    │   ├── e01.json
+    │   ├── e02.json
+    │   ├── e03.json
+    │   ├── e04.json
     │   └── ...
     ├── fixtures/
     └── models.json
 ```
+
+Case files are plain JSON with `{id, title, temperature, fixtures, prompt, rubric}` — that's
+the exact shape `harness/run.py`'s loader reads (`load_cases`), nothing richer. `python
+harness/run.py init <suite>` generates a starter case in this shape; don't hand-roll a
+different schema (an earlier YAML template with hard-gates/model/run/score sections existed
+briefly but was never read by the harness, so it was removed).
 
 Shared harness:
 
