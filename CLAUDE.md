@@ -142,7 +142,8 @@ Failure mode ที่ควรมีเคสจับไว้ในทุก 
 
 - [x] harness รองรับหลาย suite เทสต์แล้วว่ารันได้
 - [ ] suite `catfood` — ใส่เคส E01-E10 จาก EVALS.md เดิม
-- [ ] scraper Shopee/Lazada — **คอขวดจริง ทำก่อนอย่างอื่น**
+- [x] scraper Shopee/Lazada — `harness/collect.py` เก็บหน้าค้นหาได้ทั้งสองเว็บ
+      (ยังเป็นระดับ search grid เท่านั้น ยังไม่เข้าหน้าสินค้า/หน้าร้าน)
 - [ ] fixtures จริง และ baseline run ครั้งแรก
 
 เคสที่ใช้ข้อมูลจริงซึ่งโมเดลไม่เคยเห็นจะให้สัญญาณดีที่สุด

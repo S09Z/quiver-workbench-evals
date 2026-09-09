@@ -30,6 +30,7 @@ correlation vs. causal explanation, high sales vs. attractive opportunity
 | e06 / e06-en | Behavioral vs. boring explanation | Trap | ดูว่ากล้าเลือกคำอธิบายน่าเบื่อไหม |
 | e07 | Hypothesis → measurable test | Computable | ตรวจ sample-size calc กับเครื่องคำนวณออนไลน์ |
 | e08 | Replication awareness | Verifiable | เช็คว่ารู้ปัญหา replication ของ paradox of choice ไหม |
+| e09-gager-lineup | Product-line price tiering | Trap | เช็คว่ามั่วต้นทุน/ขนาดบรรจุที่ไม่ได้ให้มาไหม — **ข้อมูล mockup ไม่ใช่ราคาจริง** ดู `fixtures/e09-gager-lineup-notes.md` |
 
 สเกลคะแนนต่อเกณฑ์: 0 = ไม่มี/ผิด, 1 = ตื้นหรือคลุมเครือ, 2 = ถูกและใช้ได้จริง
 
