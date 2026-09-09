@@ -1,0 +1,65 @@
+---
+title: Shopify Sidekick — Evaluation Workflow
+---
+flowchart TD
+
+    subgraph GTX["1 · Ground Truth Set (GTX)"]
+        direction TB
+        A["บทสนทนาจริงจาก production"]
+        A --> B["สุ่มตามการกระจายจริง<br/>ไม่ใช่ golden dataset ที่คัดมาเอง"]
+        B --> C["ผู้เชี่ยวชาญอย่างน้อย 3 คน<br/>ให้ label หลายเกณฑ์"]
+        C --> D{"วัดความเห็นตรงกันระหว่างคน<br/>Cohen Kappa · Kendall Tau · Pearson"}
+        D -->|"ตรงกันน้อย"| E["นิยามเกณฑ์ยังคลุมเครือ<br/>แก้เกณฑ์ ไม่ใช่แก้คน"]
+        E --> C
+        D -->|"ตรงกันพอ"| F["GTX พร้อมใช้<br/>ค่าความเห็นตรงกันของคน = เพดานของ judge"]
+    end
+
+    subgraph JUDGE["2 · สอบเทียบ LLM Judge"]
+        direction TB
+        G["สร้าง judge เฉพาะทางหลายตัว<br/>หนึ่งตัวต่อหนึ่งมิติ ไม่ใช่ตัวเดียวให้คะแนน 0-10"]
+        G --> H["รัน judge ทับ GTX"]
+        H --> I{"correlation กับคน<br/>เข้าใกล้เพดานหรือยัง"}
+        I -->|"ยังห่าง"| J["ปรับ prompt ของ judge"]
+        J --> H
+        I -->|"ใกล้แล้ว"| K{"swap test<br/>สลับ judge กับคนแบบสุ่มใน GTX<br/>ยังแยกออกไหมว่าอันไหนใครให้"}
+        K -->|"แยกออก"| J
+        K -->|"แยกไม่ออก"| L["judge เชื่อถือได้"]
+    end
+
+    subgraph SIM["3 · ประเมิน candidate ก่อน deploy"]
+        direction TB
+        M["candidate ใหม่<br/>prompt · โมเดล · tool · JIT instruction"]
+        M --> N["user simulator<br/>เล่นซ้ำเจตนาของบทสนทนาจริง"]
+        N --> O["judge ให้คะแนนทุก candidate"]
+        O --> P{"ดีกว่า baseline<br/>อย่างมีนัยสำคัญไหม"}
+        P -->|"ไม่"| M
+        P -->|"ดีกว่า"| Q["deploy"]
+    end
+
+    subgraph TRAIN["4 · GRPO — ทำเมื่อถึงสเกลเท่านั้น"]
+        direction TB
+        R["N-Stage Gated Rewards"]
+        R --> S{"ด่าน 1 · procedural<br/>syntax · schema · enum"}
+        S -->|"ไม่ผ่าน"| U["reward = 0<br/>ไม่ต้องเรียก judge ให้เปลืองเงิน"]
+        S -->|"ผ่าน"| T["ด่าน 2 · semantic<br/>คะแนนจาก LLM judge"]
+        T --> V["GRPO training"]
+        V --> W{"ตรวจ reward hacking<br/>opt-out · tag hacking · schema violation"}
+        W -->|"เจอ"| X["อัปเดต validator และ judge<br/>ให้จับ failure mode ใหม่"]
+        X --> S
+        W -->|"ไม่เจอ"| Y["โมเดลที่เทรนแล้ว"]
+    end
+
+    L --> O
+    L --> R
+    Y --> M
+    F --> G
+    Q -.->|"บทสนทนาใหม่ไหลกลับเข้า GTX"| A
+    W -.->|"failure mode ใหม่กลายเป็นเกณฑ์ใหม่"| C
+
+    classDef gate fill:#fff4e6,stroke:#e8a33d,stroke-width:2px
+    classDef trust fill:#e8f5e9,stroke:#4caf50,stroke-width:2px
+    classDef warn fill:#fdecea,stroke:#e05c4b,stroke-width:2px
+
+    class D,I,K,P,S,W gate
+    class F,L,Q,Y trust
+    class U,X warn

@@ -1,0 +1,322 @@
+# EVAL_CASE.yaml
+# Template for suites/catfood/cases/<ID>.yaml
+
+schema_version: "1.0"
+
+id: "CAT-E01"
+status: "draft" # draft | active | deprecated
+
+metadata:
+  title: "Short evaluation title"
+  category: "trend_detection"
+  tags:
+    - catfood
+    - niche
+    - behavioral-economics
+
+  created_at: "2026-09-09"
+  updated_at: "2026-09-09"
+
+research_question: |
+  What market question are we trying to answer?
+
+task:
+  user_prompt: |
+    Exact prompt given to the model.
+
+  objective: |
+    What decision should this analysis help us make?
+
+  scope:
+    geography: "Thailand"
+    marketplace:
+      - "Shopee"
+      - "Lazada"
+    time_period: "RECORD"
+    currency: "THB"
+
+data:
+  snapshot_date: "YYYY-MM-DD"
+  collection_period: "YYYY-MM-DD to YYYY-MM-DD"
+
+  fixture_files:
+    - "{{products.csv}}"
+    - "{{reviews.csv}}"
+
+  known_facts:
+    - id: "F01"
+      statement: "Fact known by evaluator."
+      source: "{{source-or-fixture}}"
+
+  hidden_facts:
+    # Used for holdout evaluation. Do not expose these to the model.
+    - id: "H01"
+      statement: "Hidden outcome."
+      source: "{{holdout-source}}"
+
+  source_quality:
+    primary_sources:
+      - "{{url-or-source}}"
+    secondary_sources:
+      - "{{url-or-source}}"
+
+constraints:
+  must:
+    - "Separate observed facts from inference."
+    - "Cite important claims."
+    - "Explain the behavioral mechanism."
+    - "State meaningful uncertainty."
+
+  must_not:
+    - "Invent market numbers."
+    - "Invent citations."
+    - "Treat seller count as equivalent to consumer demand without evidence."
+
+  behavioral_economics:
+    required: true
+    acceptable_mechanisms:
+      - "loss aversion"
+      - "social proof"
+      - "anchoring"
+      - "framing"
+      - "uncertainty reduction"
+      - "identity signaling"
+      - "anthropomorphism"
+      - "present bias"
+      - "choice architecture"
+      - "status quo bias"
+
+evaluation_design:
+  mechanisms:
+    verifiable:
+      enabled: true
+      verification:
+        - "Open cited sources."
+        - "Check whether each source supports the claim."
+
+    holdout:
+      enabled: false
+      hidden_questions:
+        - "What happened in the withheld period?"
+      scoring_method: |
+        Compare prediction against hidden outcome.
+
+    computable:
+      enabled: true
+      checks:
+        - "Verify price/margin/growth calculations."
+
+    trap:
+      enabled: true
+      trap_description: |
+        Describe the tempting but incorrect interpretation.
+
+    sycophancy:
+      enabled: false
+      false_premise: |
+        Optional plausible but unsupported premise.
+
+acceptance_criteria:
+  - id: "AC01"
+    description: "Identifies the strongest supported trend."
+    required: true
+
+  - id: "AC02"
+    description: "Distinguishes demand signal from seller/activity signal."
+    required: true
+
+  - id: "AC03"
+    description: "Explains at least one behavioral mechanism rather than merely naming it."
+    required: true
+
+  - id: "AC04"
+    description: "States uncertainty and counter-evidence."
+    required: true
+
+  - id: "AC05"
+    description: "Produces a commercially useful implication."
+    required: true
+
+rubric:
+  scale:
+    min: 0
+    max: 2
+    meaning:
+      0: "Absent, incorrect, fabricated, or materially misleading."
+      1: "Partially correct, shallow, or incomplete."
+      2: "Correct, evidence-based, and practically useful."
+
+  dimensions:
+    evidence_quality:
+      weight: 1
+      question: "Are important claims supported by appropriate evidence?"
+
+    trend_detection:
+      weight: 1
+      question: "Does the model distinguish real trend from noise/spike?"
+
+    market_reasoning:
+      weight: 1
+      question: "Does it reason about demand, competition, economics, and opportunity?"
+
+    behavioral_economics:
+      weight: 1
+      question: "Does it explain a credible behavioral mechanism?"
+
+    causal_discipline:
+      weight: 1
+      question: "Does it distinguish fact, inference, hypothesis, and causality?"
+
+    quantitative_accuracy:
+      weight: 1
+      question: "Are calculations and numerical interpretations correct?"
+
+    counter_evidence:
+      weight: 1
+      question: "Does it actively look for evidence that could falsify the thesis?"
+
+    commercial_usefulness:
+      weight: 1
+      question: "Would the analysis improve a real product/market decision?"
+
+    uncertainty:
+      weight: 1
+      question: "Is confidence proportional to evidence quality?"
+
+    instruction_following:
+      weight: 1
+      question: "Does the model follow the requested scope and output?"
+
+hard_gates:
+  - id: "HG01"
+    condition: "Fabricated citation or source."
+    result: "FAIL"
+
+  - id: "HG02"
+    condition: "Material numerical error."
+    result: "FAIL"
+
+  - id: "HG03"
+    condition: "Unsupported claim presented as established fact."
+    result: "FAIL"
+
+  - id: "HG04"
+    condition: "Critical contradiction in the fixture is ignored when it directly invalidates the thesis."
+    result: "FAIL"
+
+model:
+  provider: "RECORD"
+  name: "RECORD"
+  version: "RECORD_EXACT_VERSION"
+  model_id: "RECORD_EXACT_ID"
+  settings:
+    temperature: null
+    tools: []
+    system_prompt_version: "RECORD"
+
+run:
+  id: "RUN-YYYYMMDD-NNN"
+  started_at: null
+  completed_at: null
+  repeat_number: 1
+
+  environment:
+    os: "RECORD"
+    runner_version: "RECORD"
+    suite_version: "RECORD"
+
+output:
+  raw_response_file: "results/{{run_id}}/response.md"
+
+  extracted_claims:
+    - claim_id: "C01"
+      claim: ""
+      claim_type: "fact | inference | hypothesis | recommendation"
+      source: ""
+      verified: false
+
+  thesis: |
+    Model's primary market thesis.
+
+  behavioral_mechanism:
+    observation: ""
+    mechanism: ""
+    predicted_behavior: ""
+    commercial_implication: ""
+
+  counter_evidence:
+    - ""
+
+  confidence:
+    level: "low | medium | high"
+    rationale: ""
+
+score:
+  dimensions:
+    evidence_quality: null
+    trend_detection: null
+    market_reasoning: null
+    behavioral_economics: null
+    causal_discipline: null
+    quantitative_accuracy: null
+    counter_evidence: null
+    commercial_usefulness: null
+    uncertainty: null
+    instruction_following: null
+
+  total: null
+  max: 20
+
+  hard_gate_failures: []
+
+failure:
+  present: false
+  primary_category: null
+  secondary_categories: []
+  severity: null
+  cause: "MODEL | DATA | TOOL | EVALUATOR | UNKNOWN"
+
+  description: |
+    What went wrong?
+
+  expected:
+    |
+    What should have happened?
+
+  observed:
+    |
+    What actually happened?
+
+  evidence:
+    - ""
+
+  reproduction:
+    - ""
+
+comparison:
+  baseline_model:
+    name: null
+    version: null
+    score: null
+
+  current_model:
+    name: null
+    version: null
+    score: null
+
+  status: "not_evaluated"
+  # improved | regressed | unchanged | mixed | not_evaluated
+
+provider_feedback:
+  required: false
+
+  title: ""
+
+  summary: ""
+
+  suggested_improvement: ""
+
+  attachments:
+    - "{{raw-response}}"
+    - "{{fixture}}"
+    - "{{verification}}"
