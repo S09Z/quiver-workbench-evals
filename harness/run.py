@@ -294,12 +294,13 @@ def cmd_run(args):
     cases = load_cases(suite, args.cases)
     models = resolve_models(suite, args.backend, args.models)
 
+    cl = client(args.backend)
+
     if args.backend == "ollama":
         check_ollama(models)
     else:
         check_openrouter()
 
-    cl = client(args.backend)
     workers = BACKENDS[args.backend]["workers"]
 
     jobs = [
