@@ -292,8 +292,15 @@ def check_openrouter() -> None:
 def cmd_run(args):
     suite = suite_path(args.suite)
     cases = load_cases(suite, args.cases)
-    models = resolve_models(suite, "openrouter", args.models)   # Task 9 จะต่อ --backend เข้ามาแทน
-    cl = client("openrouter")   # Task 9 จะต่อ --backend เข้ามาแทน
+    models = resolve_models(suite, args.backend, args.models)
+
+    if args.backend == "ollama":
+        check_ollama(models)
+    else:
+        check_openrouter()
+
+    cl = client(args.backend)
+    workers = BACKENDS[args.backend]["workers"]
 
     jobs = [
         (case, model, rep)
@@ -301,13 +308,16 @@ def cmd_run(args):
         for model in models
         for rep in range(1, args.repeat + 1)
     ]
-    print(f"{len(jobs)} งาน — {len(cases)} เคส × {len(models)} โมเดล × {args.repeat} รอบ\n")
+    print(
+        f"{len(jobs)} งาน — {len(cases)} เคส × {len(models)} โมเดล × {args.repeat} รอบ "
+        f"[{args.backend}, {workers} worker]\n"
+    )
 
-    with ThreadPoolExecutor(max_workers=BACKENDS["openrouter"]["workers"]) as pool:   # Task 9 จะต่อ --backend เข้ามาแทน
+    with ThreadPoolExecutor(max_workers=workers) as pool:
         futures = [
             pool.submit(
                 one_call, cl, args.suite, case, model, rep,
-                args.force, "openrouter", MAX_TOKENS,   # Task 9 จะต่อ --backend เข้ามาแทน
+                args.force, args.backend, args.max_tokens,
             )
             for case, model, rep in jobs
         ]
@@ -315,7 +325,7 @@ def cmd_run(args):
             print(fut.result(), flush=True)
 
     for model in models:
-        make_score_stub(run_dir(args.suite, "openrouter", model), cases, args.repeat)   # Task 9 จะต่อ --backend เข้ามาแทน
+        make_score_stub(run_dir(args.suite, args.backend, model), cases, args.repeat)
     print("\nเสร็จ — ไปกรอกคะแนนใน results/*/scores.json")
 
 
@@ -412,6 +422,11 @@ def main():
     r.add_argument("--models", nargs="*", help="ทับลิสต์โมเดลชั่วคราว")
     r.add_argument("--repeat", type=int, default=1)
     r.add_argument("--force", action="store_true", help="รันทับของเดิม")
+    r.add_argument(
+        "--backend", choices=sorted(BACKENDS), default="openrouter",
+        help="openrouter (default) หรือ ollama สำหรับโมเดลในเครื่อง",
+    )
+    r.add_argument("--max-tokens", type=int, default=MAX_TOKENS, dest="max_tokens")
     r.set_defaults(func=cmd_run)
 
     rep = sub.add_parser("report", help="สรุปคะแนน")
