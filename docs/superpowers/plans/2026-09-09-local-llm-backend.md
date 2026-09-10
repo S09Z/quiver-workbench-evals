@@ -53,11 +53,17 @@ dependencies = [
     "python-dotenv>=1.0.0",
 ]
 
+[tool.poetry]
+package-mode = false
+
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.0"
 ```
 
-วาง `[tool.poetry.group.dev.dependencies]` ต่อท้ายไฟล์ ก่อน `[build-system]`
+วางบล็อก `[tool.poetry]` และ `[tool.poetry.group.dev.dependencies]` ต่อท้ายไฟล์ ก่อน `[build-system]`
+
+`package-mode = false` จำเป็น เพราะ repo นี้เป็นสคริปต์ ไม่ใช่ package — ถ้าไม่ใส่
+`poetry install` จะพังด้วย `No file/folder found for package quiver-workbench-evals`
 
 - [ ] **Step 2: ติดตั้ง**
 
