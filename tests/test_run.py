@@ -96,10 +96,11 @@ class _FakeCompletions:
     def __init__(self, finish_reason):
         self.finish_reason = finish_reason
         self.kwargs = None
+        self.content = "สวัสดี"
 
     def create(self, **kwargs):
         self.kwargs = kwargs
-        return _fake_resp(self.finish_reason)
+        return _fake_resp(self.finish_reason, self.content)
 
 
 class _FakeClient:
@@ -157,3 +158,42 @@ def test_backend_from_dirname_new_format():
 def test_backend_from_dirname_legacy_is_unknown():
     # โฟลเดอร์รูปแบบเก่าไม่มีช่อง backend — ต้องคืน '?' ไม่ใช่เดามั่ว
     assert run.backend_from_dirname("2026-09-09__catfood__anthropic__claude-opus-5") == "?"
+
+
+def test_one_call_marks_truncation_in_the_md_file(tmp_path, monkeypatch):
+    monkeypatch.setattr(run, "RESULTS_DIR", tmp_path)
+    cl = _FakeClient("length")
+    case = {"id": "e99", "prompt": "hi"}
+    run.one_call(cl, "catfood", case, "qwen3:latest", 1, False, "ollama", 1234)
+    md = (tmp_path / run.run_dir_name("catfood", "ollama", "qwen3:latest") / "e99__r1.md").read_text(
+        encoding="utf-8"
+    )
+    assert "TRUNCATED" in md.splitlines()[0]
+
+
+def test_one_call_md_has_no_marker_when_complete(tmp_path, monkeypatch):
+    monkeypatch.setattr(run, "RESULTS_DIR", tmp_path)
+    cl = _FakeClient("stop")
+    case = {"id": "e99", "prompt": "hi"}
+    run.one_call(cl, "catfood", case, "qwen3:latest", 1, False, "ollama", 1234)
+    md = (tmp_path / run.run_dir_name("catfood", "ollama", "qwen3:latest") / "e99__r1.md").read_text(
+        encoding="utf-8"
+    )
+    assert "TRUNCATED" not in md
+
+
+def test_one_call_reports_empty_answer_as_empty(tmp_path, monkeypatch):
+    monkeypatch.setattr(run, "RESULTS_DIR", tmp_path)
+    cl = _FakeClient("length")
+    cl.completions.content = ""
+    case = {"id": "e99", "prompt": "hi"}
+    out = run.one_call(cl, "catfood", case, "qwen3:latest", 1, False, "ollama", 1234)
+    assert out.startswith("EMPTY")
+
+
+def test_one_call_records_max_tokens_in_meta(tmp_path, monkeypatch):
+    monkeypatch.setattr(run, "RESULTS_DIR", tmp_path)
+    cl = _FakeClient()
+    case = {"id": "e99", "prompt": "hi"}
+    run.one_call(cl, "catfood", case, "qwen3:latest", 1, False, "ollama", 4321)
+    assert _meta_of(tmp_path)["max_tokens"] == 4321

@@ -193,8 +193,12 @@ def one_call(cl, suite_name, case, model, rep, force, backend, max_tokens):
     text = choice.message.content or ""
     finish_reason = getattr(choice, "finish_reason", None)
 
+    # คำตอบที่โดนตัดจะทำให้ให้คะแนนผิด (0 ในเกณฑ์ที่โมเดลยังไม่ทันเขียนถึง) ต้องเห็นชัด
+    # ต้องเห็นตั้งแต่ตอน console (จะเลื่อนหายไปตอนกรอกคะแนนทีหลัง) ไปจน .md เอง
+    # (ไฟล์ที่เจ้าของเปิดอ่านจริง ไม่ใช่ .meta.json ที่ไม่มีใครเปิด)
+    cut = " | ⚠️ TRUNCATED (max_tokens)" if finish_reason == "length" else ""
     md_path.write_text(
-        f"<!-- {model} | {suite_name}/{case['id']} | rep {rep} | {elapsed}s -->\n\n{text}",
+        f"<!-- {model} | {suite_name}/{case['id']} | rep {rep} | {elapsed}s{cut} -->\n\n{text}",
         encoding="utf-8",
     )
 
@@ -210,6 +214,7 @@ def one_call(cl, suite_name, case, model, rep, force, backend, max_tokens):
                 "seconds": elapsed,
                 "prompt_tokens": getattr(usage, "prompt_tokens", None),
                 "completion_tokens": getattr(usage, "completion_tokens", None),
+                "max_tokens": max_tokens,
                 "finish_reason": finish_reason,
             },
             ensure_ascii=False,
@@ -218,9 +223,10 @@ def one_call(cl, suite_name, case, model, rep, force, backend, max_tokens):
         encoding="utf-8",
     )
 
-    # คำตอบที่โดนตัดจะทำให้ให้คะแนนผิด (0 ในเกณฑ์ที่โมเดลยังไม่ทันเขียนถึง) ต้องเห็นชัด
-    cut = "  ⚠️ ถูกตัดกลางคัน (max_tokens)" if finish_reason == "length" else ""
-    return f"ok    {model:34} {stem}  {elapsed}s{cut}"
+    # คำตอบว่างเปล่า (โดนตัดจนไม่เหลือข้อความ) ต้องไม่เรียกว่า ok — จะดูเหมือนโมเดลตอบแย่เฉย ๆ
+    console_cut = "  ⚠️ ถูกตัดกลางคัน (max_tokens)" if finish_reason == "length" else ""
+    status = "EMPTY" if not text.strip() else "ok"
+    return f"{status:5} {model:34} {stem}  {elapsed}s{console_cut}"
 
 
 def make_score_stub(out_dir: Path, cases, repeat: int):
