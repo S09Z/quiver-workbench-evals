@@ -86,7 +86,7 @@ suites/<ชื่อ>/
     SUITE.md              เอกสารอธิบายเคสและเกณฑ์ให้คะแนน
     cases/*.json          โจทย์ + rubric
     fixtures/             ข้อมูลจริง อ้างจากเคสด้วย {{ชื่อไฟล์}}
-    models.json           (ไม่บังคับ) ทับลิสต์โมเดลเฉพาะชุดนี้
+    models.json           (ไม่บังคับ) ทับลิสต์โมเดลเฉพาะชุดนี้ — เป็น dict คีย์ตาม backend: {"openrouter": [...], "ollama": [...]}
 results/                  คำตอบดิบ + scores.json ที่กรอกด้วยมือ
 scratch/                  ที่ลองอะไรเล่น ๆ ไม่ต้องเป็นระเบียบ ไม่เข้า git
 ```
@@ -101,6 +101,9 @@ python harness/run.py init <suite>            สร้างชุดใหม�
 python harness/run.py run <suite>             รันทุกเคส ทุกโมเดล
 python harness/run.py run <suite> --cases e03
 python harness/run.py run <suite> --repeat 3  วัด self-consistency
+python harness/run.py run <suite> --backend ollama    รันด้วยโมเดลในเครื่อง ไม่เสียเงิน
+python harness/run.py run <suite> --max-tokens 2000   จำกัดความยาวคำตอบ
+python harness/run.py run <suite> --force --cases e03 --models qwen3:latest   รันซ้ำเฉพาะอันที่พัง
 python harness/run.py report [--suite X]      สรุปคะแนน
 ```
 
@@ -141,6 +144,7 @@ Failure mode ที่ควรมีเคสจับไว้ในทุก 
 ## สถานะ
 
 - [x] harness รองรับหลาย suite เทสต์แล้วว่ารันได้
+- [x] harness รองรับ backend `ollama` แล้ว (`--backend ollama`) รันได้โดยไม่ต้องมีเครดิต
 - [ ] suite `catfood` — ใส่เคส E01-E10 จาก EVALS.md เดิม
 - [ ] scraper Shopee/Lazada — **คอขวดจริง ทำก่อนอย่างอื่น**
 - [ ] fixtures จริง และ baseline run ครั้งแรก
