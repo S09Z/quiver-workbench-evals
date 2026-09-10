@@ -263,6 +263,32 @@ def check_ollama(models) -> None:
         )
 
 
+def check_openrouter() -> None:
+    """พิมพ์ยอดเครดิตให้เห็นก่อนเสมอ และหยุดถ้าเหลือ 0
+
+    รันแรกพังทั้ง 48 งานด้วย 402 เพราะไม่มีใครรู้ว่าเครดิตหมดจนกว่าจะยิงจริง
+    """
+    key = os.getenv("OPENROUTER_API_KEY")
+    req = urllib.request.Request(
+        "https://openrouter.ai/api/v1/credits",
+        headers={"Authorization": f"Bearer {key}"},
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=15) as r:
+            data = json.load(r)["data"]
+    except Exception as exc:
+        print(f"เช็คเครดิตไม่สำเร็จ ({type(exc).__name__}) — ไปต่อแบบไม่รู้ยอด", file=sys.stderr)
+        return
+
+    left = data.get("total_credits", 0) - data.get("total_usage", 0)
+    print(f"เครดิต OpenRouter คงเหลือ: {left:.4f}")
+    if left <= 0:
+        sys.exit(
+            "เครดิตหมด — เติมที่ https://openrouter.ai/settings/credits "
+            "หรือรันด้วย --backend ollama แทน"
+        )
+
+
 def cmd_run(args):
     suite = suite_path(args.suite)
     cases = load_cases(suite, args.cases)
