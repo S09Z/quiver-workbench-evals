@@ -148,3 +148,12 @@ def test_missing_tags_reports_only_absent():
 
 def test_missing_tags_empty_when_all_present():
     assert run.missing_tags(["qwen3:latest"], ["qwen3:latest", "llama3:8b"]) == []
+
+
+def test_backend_from_dirname_new_format():
+    assert run.backend_from_dirname("2026-09-09__catfood__ollama__qwen3-latest") == "ollama"
+
+
+def test_backend_from_dirname_legacy_is_unknown():
+    # โฟลเดอร์รูปแบบเก่าไม่มีช่อง backend — ต้องคืน '?' ไม่ใช่เดามั่ว
+    assert run.backend_from_dirname("2026-09-09__catfood__anthropic__claude-opus-5") == "?"

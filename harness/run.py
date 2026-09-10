@@ -330,6 +330,15 @@ def cmd_run(args):
     print("\nเสร็จ — ไปกรอกคะแนนใน results/*/scores.json")
 
 
+def backend_from_dirname(name: str) -> str:
+    """รูปแบบใหม่คือ <วันที่>__<suite>__<backend>__<model>
+    โฟลเดอร์เก่าที่ยังไม่มีช่อง backend คืน '?' ไปตรง ๆ ดีกว่าเดา"""
+    parts = name.split("__")
+    if len(parts) >= 4 and parts[2] in BACKENDS:
+        return parts[2]
+    return "?"
+
+
 def cmd_report(args):
     rows = []
     for d in sorted(RESULTS_DIR.glob("*/")):
@@ -346,15 +355,16 @@ def cmd_report(args):
             if isinstance(v, (int, float))
         ]
         slots = sum(len(e.get("criteria", {})) for e in scores.values())
-        rows.append((d.name, sum(vals), len(vals), slots))
+        rows.append((d.name, backend_from_dirname(d.name), sum(vals), len(vals), slots))
 
     if not rows:
         sys.exit("ยังไม่มีคะแนน — กรอก scores.json ก่อน")
 
-    print(f"{'run':58} {'คะแนน':>8} {'กรอกแล้ว':>12}")
-    for name, total, graded, slots in sorted(rows, key=lambda r: -r[1]):
-        print(f"{name:58} {total:>8} {f'{graded}/{slots}':>12}")
+    print(f"{'run':58} {'backend':>10} {'คะแนน':>8} {'กรอกแล้ว':>12}")
+    for name, backend, total, graded, slots in sorted(rows, key=lambda r: -r[2]):
+        print(f"{name:58} {backend:>10} {total:>8} {f'{graded}/{slots}':>12}")
     print("\nอย่าเทียบข้ามรันที่กรอกไม่ครบเท่ากัน เดี๋ยวหลอกตัวเอง")
+    print("และอย่าเทียบข้าม backend ตรง ๆ — local 8B กับ frontier คนละชั้น (MODEL_EVAL.md §13)")
 
 
 EXAMPLE_CASE = {
