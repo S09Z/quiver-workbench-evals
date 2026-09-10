@@ -49,12 +49,21 @@ RESULTS_DIR = ROOT / "results"
 # ชื่อรุ่นเปลี่ยนบ่อยมาก อย่าเชื่อลิสต์นี้โดยไม่ตรวจ
 # แต่ละ suite ทับลิสต์นี้ได้ด้วยไฟล์ suites/<ชื่อ>/models.json
 # ---------------------------------------------------------------------------
-DEFAULT_MODELS = [
-    "anthropic/claude-opus-5",
-    "openai/gpt-5.6-sol",
-    "google/gemini-3.8-flash",
-    "qwen/qwen3.8-max",
-]
+DEFAULT_MODELS = {
+    "openrouter": [
+        "anthropic/claude-opus-5",
+        "openai/gpt-5.6-sol",
+        "google/gemini-3.8-flash",
+        "qwen/qwen3.8-max",
+    ],
+    # tag ต้องตรงกับที่ `ollama list` มีจริง — 'qwen3:8b' ไม่มีอยู่จริง
+    # โมเดล :cloud ไม่ใส่ไว้ตรงนี้เพราะมีวันหมดอายุ ให้ใส่ผ่าน models.json แทน
+    "ollama": [
+        "qwen3:latest",
+        "llama3:8b",
+        "deepseek-r1:latest",
+    ],
+}
 
 REQUEST_TIMEOUT = 600     # โมเดล reasoning ใช้เวลานาน อย่าตั้งต่ำ
 MAX_TOKENS = 4000         # ไม่ตั้ง = โมเดลขอเพดานตัวเอง (65536) แล้ว OpenRouter กันเครดิตไม่ไหว
@@ -102,11 +111,19 @@ def suite_path(name: str) -> Path:
     return p
 
 
-def load_models(suite: Path):
-    override = suite / "models.json"
-    if override.exists():
-        return json.loads(override.read_text(encoding="utf-8"))
-    return DEFAULT_MODELS
+def resolve_models(suite: Path, backend: str, override=None):
+    """ลำดับความสำคัญ: --models > suites/<ชื่อ>/models.json > DEFAULT_MODELS"""
+    if override:
+        return override
+    path = suite / "models.json"
+    if path.exists():
+        per_backend = json.loads(path.read_text(encoding="utf-8"))
+        if backend not in per_backend:
+            sys.exit(
+                f"{path} ไม่มีคีย์ '{backend}' — ที่มีคือ: {', '.join(sorted(per_backend))}"
+            )
+        return per_backend[backend]
+    return DEFAULT_MODELS[backend]
 
 
 def load_cases(suite: Path, only=None):
@@ -215,7 +232,7 @@ def make_score_stub(out_dir: Path, cases, repeat: int):
 def cmd_run(args):
     suite = suite_path(args.suite)
     cases = load_cases(suite, args.cases)
-    models = args.models or load_models(suite)
+    models = resolve_models(suite, "openrouter", args.models)   # Task 9 จะต่อ --backend เข้ามาแทน
     cl = client("openrouter")   # Task 9 จะต่อ --backend เข้ามาแทน
 
     jobs = [
