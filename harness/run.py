@@ -166,8 +166,8 @@ def run_dir(suite_name: str, backend: str, model: str) -> Path:
     return d
 
 
-def one_call(cl, suite_name, case, model, rep, force):
-    out_dir = run_dir(suite_name, "openrouter", model)   # Task 9 จะต่อ --backend เข้ามาแทน
+def one_call(cl, suite_name, case, model, rep, force, backend, max_tokens):
+    out_dir = run_dir(suite_name, backend, model)
     stem = f"{case['id']}__r{rep}"
     md_path = out_dir / f"{stem}.md"
 
@@ -181,13 +181,16 @@ def one_call(cl, suite_name, case, model, rep, force):
             model=model,
             messages=[{"role": "user", "content": case["prompt"]}],
             temperature=case.get("temperature", 1.0),
+            max_tokens=max_tokens,
         )
     except Exception as exc:
         (out_dir / f"{stem}.error.txt").write_text(repr(exc), encoding="utf-8")
         return f"FAIL  {model:34} {stem}  {type(exc).__name__}"
 
     elapsed = round(time.time() - started, 1)
-    text = resp.choices[0].message.content or ""
+    choice = resp.choices[0]
+    text = choice.message.content or ""
+    finish_reason = getattr(choice, "finish_reason", None)
 
     md_path.write_text(
         f"<!-- {model} | {suite_name}/{case['id']} | rep {rep} | {elapsed}s -->\n\n{text}",
@@ -199,19 +202,24 @@ def one_call(cl, suite_name, case, model, rep, force):
         json.dumps(
             {
                 "suite": suite_name,
+                "backend": backend,
                 "model": model,
                 "case": case["id"],
                 "repeat": rep,
                 "seconds": elapsed,
                 "prompt_tokens": getattr(usage, "prompt_tokens", None),
                 "completion_tokens": getattr(usage, "completion_tokens", None),
+                "finish_reason": finish_reason,
             },
             ensure_ascii=False,
             indent=2,
         ),
         encoding="utf-8",
     )
-    return f"ok    {model:34} {stem}  {elapsed}s"
+
+    # คำตอบที่โดนตัดจะทำให้ให้คะแนนผิด (0 ในเกณฑ์ที่โมเดลยังไม่ทันเขียนถึง) ต้องเห็นชัด
+    cut = "  ⚠️ ถูกตัดกลางคัน (max_tokens)" if finish_reason == "length" else ""
+    return f"ok    {model:34} {stem}  {elapsed}s{cut}"
 
 
 def make_score_stub(out_dir: Path, cases, repeat: int):
@@ -245,7 +253,10 @@ def cmd_run(args):
 
     with ThreadPoolExecutor(max_workers=BACKENDS["openrouter"]["workers"]) as pool:   # Task 9 จะต่อ --backend เข้ามาแทน
         futures = [
-            pool.submit(one_call, cl, args.suite, case, model, rep, args.force)
+            pool.submit(
+                one_call, cl, args.suite, case, model, rep,
+                args.force, "openrouter", MAX_TOKENS,   # Task 9 จะต่อ --backend เข้ามาแทน
+            )
             for case, model, rep in jobs
         ]
         for fut in as_completed(futures):

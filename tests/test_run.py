@@ -78,3 +78,64 @@ def test_resolve_models_missing_backend_key_exits(tmp_path):
     )
     with pytest.raises(SystemExit):
         run.resolve_models(tmp_path, "ollama", None)
+
+
+def _fake_resp(finish_reason="stop", content="สวัสดี"):
+    return SimpleNamespace(
+        choices=[
+            SimpleNamespace(
+                message=SimpleNamespace(content=content),
+                finish_reason=finish_reason,
+            )
+        ],
+        usage=SimpleNamespace(prompt_tokens=11, completion_tokens=22),
+    )
+
+
+class _FakeCompletions:
+    def __init__(self, finish_reason):
+        self.finish_reason = finish_reason
+        self.kwargs = None
+
+    def create(self, **kwargs):
+        self.kwargs = kwargs
+        return _fake_resp(self.finish_reason)
+
+
+class _FakeClient:
+    def __init__(self, finish_reason="stop"):
+        self.completions = _FakeCompletions(finish_reason)
+        self.chat = SimpleNamespace(completions=self.completions)
+
+
+def _meta_of(tmp_path, backend="ollama", model="qwen3:latest"):
+    name = run.run_dir_name("catfood", backend, model)
+    return json.loads((tmp_path / name / "e99__r1.meta.json").read_text(encoding="utf-8"))
+
+
+def test_one_call_sends_max_tokens(tmp_path, monkeypatch):
+    monkeypatch.setattr(run, "RESULTS_DIR", tmp_path)
+    cl = _FakeClient()
+    case = {"id": "e99", "prompt": "hi"}
+    run.one_call(cl, "catfood", case, "qwen3:latest", 1, False, "ollama", 1234)
+    assert cl.completions.kwargs["max_tokens"] == 1234
+
+
+def test_one_call_records_backend_and_finish_reason(tmp_path, monkeypatch):
+    monkeypatch.setattr(run, "RESULTS_DIR", tmp_path)
+    cl = _FakeClient("length")
+    case = {"id": "e99", "prompt": "hi"}
+    out = run.one_call(cl, "catfood", case, "qwen3:latest", 1, False, "ollama", 1234)
+    meta = _meta_of(tmp_path)
+    assert meta["backend"] == "ollama"
+    assert meta["finish_reason"] == "length"
+    assert "ถูกตัด" in out
+
+
+def test_one_call_no_warning_when_complete(tmp_path, monkeypatch):
+    monkeypatch.setattr(run, "RESULTS_DIR", tmp_path)
+    cl = _FakeClient("stop")
+    case = {"id": "e99", "prompt": "hi"}
+    out = run.one_call(cl, "catfood", case, "qwen3:latest", 1, False, "ollama", 1234)
+    assert "ถูกตัด" not in out
+    assert _meta_of(tmp_path)["finish_reason"] == "stop"
