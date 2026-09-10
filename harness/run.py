@@ -116,15 +116,19 @@ def model_slug(model: str) -> str:
     return model.replace("/", "__").replace(":", "-")
 
 
-def run_dir(suite_name: str, model: str) -> Path:
-    slug = model.replace("/", "__")
-    d = RESULTS_DIR / f"{date.today().isoformat()}__{suite_name}__{slug}"
+def run_dir_name(suite_name: str, backend: str, model: str, day: str | None = None) -> str:
+    day = day or date.today().isoformat()
+    return f"{day}__{suite_name}__{backend}__{model_slug(model)}"
+
+
+def run_dir(suite_name: str, backend: str, model: str) -> Path:
+    d = RESULTS_DIR / run_dir_name(suite_name, backend, model)
     d.mkdir(parents=True, exist_ok=True)
     return d
 
 
 def one_call(cl, suite_name, case, model, rep, force):
-    out_dir = run_dir(suite_name, model)
+    out_dir = run_dir(suite_name, "openrouter", model)   # Task 9 จะต่อ --backend เข้ามาแทน
     stem = f"{case['id']}__r{rep}"
     md_path = out_dir / f"{stem}.md"
 
@@ -209,7 +213,7 @@ def cmd_run(args):
             print(fut.result(), flush=True)
 
     for model in models:
-        make_score_stub(run_dir(args.suite, model), cases, args.repeat)
+        make_score_stub(run_dir(args.suite, "openrouter", model), cases, args.repeat)   # Task 9 จะต่อ --backend เข้ามาแทน
     print("\nเสร็จ — ไปกรอกคะแนนใน results/*/scores.json")
 
 
