@@ -6,7 +6,7 @@ quiver — สนามซ้อมส่วนตัวสำหรับทด
 ไม่ผูกกับโดเมนไหน แต่ละโดเมนคือหนึ่ง suite ใต้ suites/
 
 ติดตั้ง:
-    pip install openai python-dotenv
+    poetry install --with dev
     echo "OPENROUTER_API_KEY=sk-or-..." > .env
 
 ใช้งาน:
@@ -14,13 +14,16 @@ quiver — สนามซ้อมส่วนตัวสำหรับทด
     python run.py run <ชื่อ suite>             รันทุกเคสในชุดนั้น
     python run.py run <suite> --cases e03      รันเฉพาะบางเคส
     python run.py run <suite> --repeat 3       รันซ้ำ สำหรับวัด self-consistency
+    python run.py run <suite> --backend ollama รันด้วยโมเดลในเครื่อง ไม่เสียเงิน
+    python run.py run <suite> --max-tokens N   ทับเพดานโทเค็นของ backend นั้น
+    python run.py run <suite> --force          รันทับของเดิม
     python run.py report                       สรุปคะแนนทุกรัน
 
 โครงไฟล์:
     suites/<ชื่อ>/SUITE.md          เอกสารอธิบายเคสและเกณฑ์ให้คะแนน
     suites/<ชื่อ>/cases/e01.json    โจทย์ + rubric
     suites/<ชื่อ>/fixtures/         ข้อมูลจริง อ้างจากเคสด้วย {{ชื่อไฟล์}}
-    results/2026-09-08__<suite>__<model>/
+    results/2026-09-08__<suite>__<backend>__<model>/
         e01__r1.md                  คำตอบดิบ
         e01__r1.meta.json           token, เวลาที่ใช้
         scores.json                 คะแนนที่กรอกเอง
@@ -286,9 +289,10 @@ def check_openrouter() -> None:
 
     รันแรกพังทั้ง 48 งานด้วย 402 เพราะไม่มีใครรู้ว่าเครดิตหมดจนกว่าจะยิงจริง
     """
-    key = os.getenv("OPENROUTER_API_KEY")
+    conf = BACKENDS["openrouter"]
+    key = os.getenv(conf["api_key_env"])
     req = urllib.request.Request(
-        "https://openrouter.ai/api/v1/credits",
+        conf["base_url"] + "/credits",
         headers={"Authorization": f"Bearer {key}"},
     )
     try:
@@ -316,7 +320,7 @@ def cmd_run(args):
 
     if args.backend == "ollama":
         check_ollama(models)
-    else:
+    elif args.backend == "openrouter":
         check_openrouter()
 
     workers = BACKENDS[args.backend]["workers"]

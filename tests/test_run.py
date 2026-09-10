@@ -168,6 +168,27 @@ def test_backend_from_dirname_legacy_is_unknown():
     assert run.backend_from_dirname("2026-09-09__catfood__anthropic__claude-opus-5") == "?"
 
 
+def test_one_call_skips_without_calling_api_when_md_exists(tmp_path, monkeypatch):
+    monkeypatch.setattr(run, "RESULTS_DIR", tmp_path)
+    cl = _FakeClient()
+    case = {"id": "e99", "prompt": "hi"}
+    run.one_call(cl, "catfood", case, "qwen3:latest", 1, False, "ollama", 1234)
+    cl.completions.kwargs = None
+    out = run.one_call(cl, "catfood", case, "qwen3:latest", 1, False, "ollama", 1234)
+    assert out.startswith("skip")
+    assert cl.completions.kwargs is None      # ไม่ได้ยิงซ้ำ
+
+
+def test_one_call_force_reruns_and_calls_api(tmp_path, monkeypatch):
+    monkeypatch.setattr(run, "RESULTS_DIR", tmp_path)
+    cl = _FakeClient()
+    case = {"id": "e99", "prompt": "hi"}
+    run.one_call(cl, "catfood", case, "qwen3:latest", 1, False, "ollama", 1234)
+    cl.completions.kwargs = None
+    run.one_call(cl, "catfood", case, "qwen3:latest", 1, True, "ollama", 1234)
+    assert cl.completions.kwargs is not None
+
+
 def test_one_call_marks_truncation_in_the_md_file(tmp_path, monkeypatch):
     monkeypatch.setattr(run, "RESULTS_DIR", tmp_path)
     cl = _FakeClient("length")
