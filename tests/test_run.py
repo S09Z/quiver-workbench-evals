@@ -139,3 +139,12 @@ def test_one_call_no_warning_when_complete(tmp_path, monkeypatch):
     out = run.one_call(cl, "catfood", case, "qwen3:latest", 1, False, "ollama", 1234)
     assert "ถูกตัด" not in out
     assert _meta_of(tmp_path)["finish_reason"] == "stop"
+
+
+def test_missing_tags_reports_only_absent():
+    got = run.missing_tags(["qwen3:latest", "nope:1b"], ["qwen3:latest", "llama3:8b"])
+    assert got == ["nope:1b"]
+
+
+def test_missing_tags_empty_when_all_present():
+    assert run.missing_tags(["qwen3:latest"], ["qwen3:latest", "llama3:8b"]) == []

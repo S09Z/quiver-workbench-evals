@@ -31,6 +31,7 @@ import json
 import os
 import sys
 import time
+import urllib.request
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import date
 from pathlib import Path
@@ -235,6 +236,31 @@ def make_score_stub(out_dir: Path, cases, repeat: int):
                     "notes": "",
                 }
     path.write_text(json.dumps(existing, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def missing_tags(requested, available) -> list:
+    have = set(available)
+    return sorted(t for t in requested if t not in have)
+
+
+def check_ollama(models) -> None:
+    """เช็คครั้งเดียวก่อนเข้าลูป ดีกว่าปล่อยให้พังทีละงานจนครบ"""
+    url = BACKENDS["ollama"]["base_url"].replace("/v1", "") + "/api/tags"
+    try:
+        with urllib.request.urlopen(url, timeout=10) as r:
+            available = [m["name"] for m in json.load(r).get("models", [])]
+    except Exception as exc:
+        sys.exit(f"ต่อ ollama ไม่ได้ ({type(exc).__name__}) — ยังไม่ได้เปิดหรือเปล่า? ลอง `ollama serve`")
+
+    missing = missing_tags(models, available)
+    if missing:
+        sys.exit(
+            "ไม่พบ tag เหล่านี้ใน ollama: "
+            + ", ".join(missing)
+            + "\nที่มีอยู่: "
+            + ", ".join(sorted(available))
+            + "\nโหลดเพิ่มด้วย `ollama pull <tag>`"
+        )
 
 
 def cmd_run(args):
