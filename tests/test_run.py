@@ -80,6 +80,14 @@ def test_resolve_models_missing_backend_key_exits(tmp_path):
         run.resolve_models(tmp_path, "ollama", None)
 
 
+def test_resolve_models_rejects_old_list_shape(tmp_path):
+    (tmp_path / "models.json").write_text(
+        json.dumps(["anthropic/claude-opus-5"]), encoding="utf-8"
+    )
+    with pytest.raises(SystemExit):
+        run.resolve_models(tmp_path, "openrouter", None)
+
+
 def _fake_resp(finish_reason="stop", content="สวัสดี"):
     return SimpleNamespace(
         choices=[

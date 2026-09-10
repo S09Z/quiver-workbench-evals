@@ -126,6 +126,11 @@ def resolve_models(suite: Path, backend: str, override=None):
     path = suite / "models.json"
     if path.exists():
         per_backend = json.loads(path.read_text(encoding="utf-8"))
+        if isinstance(per_backend, list):
+            sys.exit(
+                f"{path} เป็นลิสต์แบบเก่า — รูปแบบใหม่ต้องเป็น dict คีย์ตาม backend เช่น\n"
+                '  {"openrouter": ["anthropic/claude-opus-5"], "ollama": ["qwen3:latest"]}'
+            )
         if backend not in per_backend:
             sys.exit(
                 f"{path} ไม่มีคีย์ '{backend}' — ที่มีคือ: {', '.join(sorted(per_backend))}"
