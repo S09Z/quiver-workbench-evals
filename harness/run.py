@@ -56,16 +56,38 @@ DEFAULT_MODELS = [
     "qwen/qwen3.8-max",
 ]
 
-MAX_WORKERS = 4
 REQUEST_TIMEOUT = 600     # โมเดล reasoning ใช้เวลานาน อย่าตั้งต่ำ
+MAX_TOKENS = 4000         # ไม่ตั้ง = โมเดลขอเพดานตัวเอง (65536) แล้ว OpenRouter กันเครดิตไม่ไหว
+
+# ---------------------------------------------------------------------------
+# ollama ตั้ง workers=1 เพราะโมเดล 8B กินราว 5 GB ยิงขนานบน RAM 16 GB แล้ว swap
+# อีกทั้ง ollama serialize request ต่อโมเดลอยู่แล้ว ขนานไปก็ไม่ได้ throughput เพิ่ม
+# ---------------------------------------------------------------------------
+BACKENDS = {
+    "openrouter": {
+        "base_url": "https://openrouter.ai/api/v1",
+        "api_key_env": "OPENROUTER_API_KEY",
+        "workers": 4,
+    },
+    "ollama": {
+        "base_url": "http://localhost:11434/v1",
+        "api_key_env": None,
+        "workers": 1,
+    },
+}
 
 
-def client() -> OpenAI:
-    key = os.getenv("OPENROUTER_API_KEY")
-    if not key:
-        sys.exit("ไม่พบ OPENROUTER_API_KEY — ใส่ในไฟล์ .env ก่อน")
+def client(backend: str) -> OpenAI:
+    conf = BACKENDS[backend]
+    env = conf["api_key_env"]
+    if env:
+        key = os.getenv(env)
+        if not key:
+            sys.exit(f"ไม่พบ {env} — ใส่ในไฟล์ .env ก่อน")
+    else:
+        key = "not-needed"      # ollama ไม่ตรวจคีย์ แต่ SDK บังคับให้ส่งค่าอะไรสักอย่าง
     return OpenAI(
-        base_url="https://openrouter.ai/api/v1",
+        base_url=conf["base_url"],
         api_key=key,
         timeout=REQUEST_TIMEOUT,
     )
@@ -194,7 +216,7 @@ def cmd_run(args):
     suite = suite_path(args.suite)
     cases = load_cases(suite, args.cases)
     models = args.models or load_models(suite)
-    cl = client()
+    cl = client("openrouter")   # Task 9 จะต่อ --backend เข้ามาแทน
 
     jobs = [
         (case, model, rep)
@@ -204,7 +226,7 @@ def cmd_run(args):
     ]
     print(f"{len(jobs)} งาน — {len(cases)} เคส × {len(models)} โมเดล × {args.repeat} รอบ\n")
 
-    with ThreadPoolExecutor(max_workers=MAX_WORKERS) as pool:
+    with ThreadPoolExecutor(max_workers=BACKENDS["openrouter"]["workers"]) as pool:   # Task 9 จะต่อ --backend เข้ามาแทน
         futures = [
             pool.submit(one_call, cl, args.suite, case, model, rep, args.force)
             for case, model, rep in jobs

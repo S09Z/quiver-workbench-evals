@@ -30,3 +30,23 @@ def test_run_dir_name_includes_backend():
 def test_run_dir_name_openrouter():
     name = run.run_dir_name("catfood", "openrouter", "anthropic/claude-opus-5", day="2026-09-09")
     assert name == "2026-09-09__catfood__openrouter__anthropic__claude-opus-5"
+
+
+def test_backends_table_has_both_lanes():
+    assert set(run.BACKENDS) == {"openrouter", "ollama"}
+
+
+def test_client_ollama_points_at_localhost(monkeypatch):
+    monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
+    cl = run.client("ollama")
+    assert str(cl.base_url).startswith("http://localhost:11434")
+
+
+def test_client_openrouter_needs_key(monkeypatch):
+    monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
+    with pytest.raises(SystemExit):
+        run.client("openrouter")
+
+
+def test_ollama_runs_one_worker():
+    assert run.BACKENDS["ollama"]["workers"] == 1
