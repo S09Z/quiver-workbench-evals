@@ -107,6 +107,15 @@ def load_cases(suite: Path, only=None):
     return cases
 
 
+def model_slug(model: str) -> str:
+    """ชื่อโมเดล -> ชิ้นส่วนชื่อโฟลเดอร์
+
+    '/' -> '__' ตามของเดิม และ ':' -> '-' เพราะ Finder บน macOS แสดง ':' เป็น '/'
+    ทำให้ชื่อโฟลเดอร์ของ ollama อ่านสับสน
+    """
+    return model.replace("/", "__").replace(":", "-")
+
+
 def run_dir(suite_name: str, model: str) -> Path:
     slug = model.replace("/", "__")
     d = RESULTS_DIR / f"{date.today().isoformat()}__{suite_name}__{slug}"
