@@ -197,3 +197,7 @@ def test_one_call_records_max_tokens_in_meta(tmp_path, monkeypatch):
     case = {"id": "e99", "prompt": "hi"}
     run.one_call(cl, "catfood", case, "qwen3:latest", 1, False, "ollama", 4321)
     assert _meta_of(tmp_path)["max_tokens"] == 4321
+
+
+def test_backends_carry_their_own_max_tokens():
+    assert run.BACKENDS["ollama"]["max_tokens"] > run.BACKENDS["openrouter"]["max_tokens"]

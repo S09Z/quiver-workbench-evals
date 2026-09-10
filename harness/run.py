@@ -67,22 +67,29 @@ DEFAULT_MODELS = {
 }
 
 REQUEST_TIMEOUT = 600     # โมเดล reasoning ใช้เวลานาน อย่าตั้งต่ำ
-MAX_TOKENS = 4000         # ไม่ตั้ง = โมเดลขอเพดานตัวเอง (65536) แล้ว OpenRouter กันเครดิตไม่ไหว
 
 # ---------------------------------------------------------------------------
 # ollama ตั้ง workers=1 เพราะโมเดล 8B กินราว 5 GB ยิงขนานบน RAM 16 GB แล้ว swap
 # อีกทั้ง ollama serialize request ต่อโมเดลอยู่แล้ว ขนานไปก็ไม่ได้ throughput เพิ่ม
+#
+# max_tokens ต่างกันมากตั้งใจ: ฝั่ง openrouter 4000 ไว้กันเครดิต — ไม่ตั้ง =
+# โมเดลขอเพดานตัวเอง (65536) แล้ว OpenRouter กันเครดิตไม่ไหว (402 ทั้ง 48 งาน
+# ในรันแรก) ฝั่ง ollama โทเค็นฟรี แต่ qwen3/deepseek-r1 เป็น reasoning model
+# ที่คิดก่อนตอบ 1-3k โทเค็น บวกภาษาไทย tokenize หนักกว่าอังกฤษหลายเท่า
+# ถ้าใช้เพดานเดียวกับ openrouter จะตัดกลางคันบ่อยจนวัดอะไรไม่ได้
 # ---------------------------------------------------------------------------
 BACKENDS = {
     "openrouter": {
         "base_url": "https://openrouter.ai/api/v1",
         "api_key_env": "OPENROUTER_API_KEY",
         "workers": 4,
+        "max_tokens": 4000,
     },
     "ollama": {
         "base_url": "http://localhost:11434/v1",
         "api_key_env": None,
         "workers": 1,
+        "max_tokens": 16000,
     },
 }
 
@@ -308,6 +315,7 @@ def cmd_run(args):
         check_openrouter()
 
     workers = BACKENDS[args.backend]["workers"]
+    max_tokens = args.max_tokens or BACKENDS[args.backend]["max_tokens"]
 
     jobs = [
         (case, model, rep)
@@ -317,14 +325,14 @@ def cmd_run(args):
     ]
     print(
         f"{len(jobs)} งาน — {len(cases)} เคส × {len(models)} โมเดล × {args.repeat} รอบ "
-        f"[{args.backend}, {workers} worker]\n"
+        f"[{args.backend}, {workers} worker, max_tokens={max_tokens}]\n"
     )
 
     with ThreadPoolExecutor(max_workers=workers) as pool:
         futures = [
             pool.submit(
                 one_call, cl, args.suite, case, model, rep,
-                args.force, args.backend, args.max_tokens,
+                args.force, args.backend, max_tokens,
             )
             for case, model, rep in jobs
         ]
@@ -443,7 +451,8 @@ def main():
         "--backend", choices=sorted(BACKENDS), default="openrouter",
         help="openrouter (default) หรือ ollama สำหรับโมเดลในเครื่อง",
     )
-    r.add_argument("--max-tokens", type=int, default=MAX_TOKENS, dest="max_tokens")
+    r.add_argument("--max-tokens", type=int, default=None, dest="max_tokens",
+                   help="ไม่ใส่ = ใช้ค่าตาม backend (openrouter 4000, ollama 16000)")
     r.set_defaults(func=cmd_run)
 
     rep = sub.add_parser("report", help="สรุปคะแนน")
