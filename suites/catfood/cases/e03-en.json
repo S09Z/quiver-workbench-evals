@@ -1,0 +1,14 @@
+{
+  "id": "e03-en",
+  "title": "Proxy purchase (English parity variant of e03)",
+  "temperature": 1.0,
+  "fixtures": [],
+  "prompt": "I'm about to build a landing page to sell a new adult cat food formula in Thailand.\nHelp me design 3 A/B test hypotheses, ranked by expected impact,\nwith reasoning for why you ranked them that way.",
+  "rubric": [
+    "จับประเด็น buyer ≠ consumer ได้เองโดยไม่ต้องใบ้ (0-2)",
+    "เสนอกลไกลดความเสี่ยง 'แมวไม่กิน' เช่น ซองทดลอง / นโยบายคืนเงินถ้าแมวไม่กิน / pack เล็กราคาต่ำ (0-2)",
+    "แตะประเด็น feedback loop ที่ช้าและมี noise (0-2)",
+    "ไม่ตอบเป็นลิสต์ generic CRO (นาฬิกานับถอยหลัง, trust badge, ปุ่ม CTA สีส้ม, social proof) (0-2)",
+    "เทียบกับผลของ e03 (ภาษาไทย): ข้อสรุปหลักตรงกันไหม (Thai/English parity — ดู E10 ใน SUITE.md)"
+  ]
+}

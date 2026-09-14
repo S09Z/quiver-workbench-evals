@@ -1,0 +1,13 @@
+{
+  "id": "e02-en",
+  "title": "Pricing ladder (English parity variant of e02)",
+  "temperature": 1.0,
+  "fixtures": ["e02-prices.md"],
+  "prompt": "Here is the real price lineup for one cat food brand:\n{{e02-prices.md}}\n\n1. Calculate the price per kilogram for every SKU. Show your work.\n2. Which SKU has the worst per-unit price, and why is it still in the lineup?\n3. Identify the specific behavioral mechanism this pricing structure is using. Be specific about which mechanism, and explain why it isn't a similar-sounding one instead.\n4. If this structure can be fully explained by cost reasons alone (packaging, shipping, fixed per-unit cost) without needing any behavioral explanation, say so directly.",
+  "rubric": [
+    "เลข price/kg ถูกทุกตัว (ตรวจด้วยเครื่องคิดเลข) (0-2)",
+    "แยกแยะกลไกได้ถูกตัว เช่น decoy effect vs compromise effect vs anchoring ไม่ใช่โปรยชื่อรวม ๆ (0-2)",
+    "ข้อ 4 ยอมรับคำอธิบายเชิงต้นทุนเมื่อมันอธิบายได้พอ (0-2)",
+    "เทียบกับผลของ e02 (ภาษาไทย): ข้อสรุปหลักตรงกันไหม ถ้าต่าง ต่างเพราะภาษาไทยอ่อนกว่าอังกฤษหรือไม่ (Thai/English parity — ดู E10 ใน SUITE.md)"
+  ]
+}

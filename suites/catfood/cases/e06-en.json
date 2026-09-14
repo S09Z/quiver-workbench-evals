@@ -1,0 +1,14 @@
+{
+  "id": "e06-en",
+  "title": "Behavioral vs. boring explanation (English parity variant of e06)",
+  "temperature": 1.0,
+  "fixtures": [],
+  "prompt": "3 real observations from the Thai cat food market:\n[FILL IN — insert your own 3 real observations from actual data before running this case]\n\nFor each one, provide:\n(a) the best behavioral-economics explanation\n(b) a boring explanation that doesn't rely on behavior at all\n    (distribution, price, cost, regulation, habit)\n(c) the single piece of data that, if collected, would tell you whether (a) or (b) is correct\n(d) which one you're betting on, with a confidence level in %",
+  "rubric": [
+    "ก่อนรัน: ต้องแทนที่ [FILL IN] ด้วยข้อสังเกตจริง 3 ข้อ (ควรใช้ข้อสังเกตชุดเดียวกับ e06 แปลเป็นอังกฤษ เพื่อเทียบพอดี)",
+    "ข้อ (ข) เป็นคำอธิบายที่แข็งจริง ไม่ใช่ straw man (0-2)",
+    "ข้อ (ค) เป็นข้อมูลที่เก็บได้จริง (0-2)",
+    "ข้อ (ง) กล้าเลือก (ข) อย่างน้อย 1 ใน 3 ข้อ (0-2)",
+    "เทียบกับผลของ e06 (ภาษาไทย): ข้อสรุปหลักตรงกันไหม (Thai/English parity — ดู E10 ใน SUITE.md)"
+  ]
+}
