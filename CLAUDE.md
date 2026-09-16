@@ -131,6 +131,8 @@ Failure mode ที่ควรมีเคสจับไว้ในทุก 
 
 **ให้คะแนนด้วยมือในช่วงแรก** ยังไม่ทำ LLM-as-judge จนกว่าจะอ่านคำตอบเอง
 ครบ 30-40 อัน เพราะยังไม่รู้ว่า "คำตอบที่ดี" ในโดเมนนี้หน้าตายังไง
+พอถึงตอนนั้น วิธีสอบเทียบ judge กับคนอยู่ใน
+[docs/references/shopify-agentic-systems.md](docs/references/shopify-agentic-systems.md)
 
 **ยังไม่ fine-tune** ลำดับคือ context engineering → eval → ปรับ prompt
 และบริบท → แล้วค่อยคิดเรื่อง distillation ตอนมีงานแคบ ๆ ที่รันซ้ำเยอะจริง

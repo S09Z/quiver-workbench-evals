@@ -452,6 +452,11 @@ Later, an LLM judge may assist with:
 
 But high-impact failures should remain human-verifiable.
 
+Before introducing a judge, read the calibration protocol in
+[`docs/references/shopify-agentic-systems.md`](docs/references/shopify-agentic-systems.md).
+The key constraint: human-to-human agreement is the ceiling for any judge — a judge
+that appears to beat the humans is measuring something other than what was intended.
+
 ---
 
 ## 16. Provider Feedback
