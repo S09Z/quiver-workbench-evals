@@ -11,6 +11,15 @@ python -m playwright install chromium   # เฉพาะตอนจะเก�
 cp .env.example .env                    # แล้วใส่ OPENROUTER_API_KEY จริงของคุณ
 ```
 
+ถ้าจะรันด้วยโมเดลในเครื่อง (ไม่เสียเงิน ไม่ต้องมี API key — ดูข้อ 3.1) ต้องมี
+[Ollama](https://ollama.com) ด้วย:
+
+```bash
+brew install ollama          # หรือดาวน์โหลดตัวติดตั้งจาก ollama.com
+ollama serve                 # เปิดค้างไว้อีกหน้าต่าง (ฟังที่ localhost:11434)
+ollama pull qwen3:latest     # ดึงโมเดลที่จะใช้ ดูลิสต์ default ในข้อ 3.1
+```
+
 ตรวจว่าติดตั้งถูกต้อง:
 
 ```bash
@@ -53,6 +62,65 @@ poetry run python harness/run.py run catfood --force
 
 ผลลัพธ์ไปอยู่ที่ `results/<วันที่>__catfood__<โมเดล>/<case>__r<รอบ>.md` พร้อม `.meta.json`
 (token/เวลา) และ `scores.json` ที่ถูกสร้างเป็นฟอร์มเปล่าให้กรอกเอง
+
+### 3.1 รันด้วยโมเดลในเครื่อง — backend `ollama` (ไม่เสียเงิน)
+
+harness ยิงได้สอง backend: `openrouter` (default, เสียเงิน) กับ `ollama` (โมเดลในเครื่อง ฟรี)
+ใช้ `--backend` สลับ ที่เหลือใช้ flag เดิมได้หมด
+
+```bash
+ollama serve                                              # ต้องเปิดค้างไว้ก่อน
+poetry run python harness/run.py run catfood --backend ollama
+poetry run python harness/run.py run catfood --backend ollama --cases e08
+```
+
+**ลิสต์โมเดล default ของ ollama** อยู่ใน `DEFAULT_MODELS["ollama"]` ใน `harness/run.py`:
+`qwen3:latest`, `llama3:8b`, `deepseek-r1:latest` — **tag ต้องตรงกับที่ `ollama list` มีจริง**
+(เช่น `qwen3:8b` ไม่มีอยู่จริง) harness จะเช็คให้ก่อนเริ่มรัน ถ้า tag ไหนขาดจะบอกชื่อออกมาแล้วหยุด
+ยังไม่ยิงงาน โมเดล `:cloud` มีวันหมดอายุ (เจอ HTTP 410 มาแล้ว) จึงไม่อยู่ในลิสต์ default
+ถ้าจะใช้ให้ใส่ผ่าน `models.json` หรือ `--models` เอง
+
+**ทับลิสต์เฉพาะ suite** — `suites/<ชื่อ>/models.json` เป็น dict คีย์ตาม backend:
+
+```json
+{
+  "openrouter": ["anthropic/claude-opus-5"],
+  "ollama": ["qwen3:latest", "gpt-oss:20b"]
+}
+```
+
+ลำดับความสำคัญ: `--models` > `models.json[backend]` > `DEFAULT_MODELS[backend]`
+(ถ้าไฟล์ยังเป็นลิสต์แบน `[...]` แบบเก่า harness จะ error บอกวิธีแก้ ไม่เดาให้เงียบ ๆ)
+
+**ผลลัพธ์แยกโฟลเดอร์ตาม backend** — `results/<วันที่>__<suite>__<backend>__<โมเดล>/`
+ผล local กับ cloud จึงไม่ปนกัน และ `report` มีคอลัมน์ backend แยก lane ให้เทียบ
+(โฟลเดอร์เก่าที่สร้างก่อนมีฟีเจอร์นี้จะขึ้น backend เป็น `?`)
+
+**เพดาน `max_tokens`** ตั้งแยกตาม backend: openrouter 4000 (กันเครดิต), ollama 16000
+(โทเค็นฟรี แต่ reasoning model อย่าง qwen3/deepseek-r1 ใช้โทเค็นไปกับการคิดเยอะ) ทับได้ด้วย
+`--max-tokens N` ถ้าคำตอบถูกตัดกลางคัน harness จะติดป้าย `⚠️ TRUNCATED (max_tokens)` ไว้หัวไฟล์
+`.md` และบันทึก `finish_reason` ลง `.meta.json` — **อย่าให้คะแนนคำตอบที่ติดป้ายนี้** ให้รันซ้ำ
+ด้วยเพดานที่สูงขึ้นแทน:
+
+```bash
+poetry run python harness/run.py run catfood --backend ollama \
+  --force --cases e03 --models qwen3:latest --max-tokens 24000
+```
+
+(`--force` จำเป็นเพราะปกติ harness จะ skip เคสที่มีไฟล์คำตอบอยู่แล้ว)
+
+**ข้อควรรู้ก่อนเชื่อผล:** โมเดล 8B ในเครื่องไม่ได้อยู่ชั้นเดียวกับโมเดล frontier — ใช้ lane นี้
+ซ้อมกลไกของเคส (prompt กำกวมไหม / rubric ตรวจได้จริงไหม) และไล่หา failure mode ฟรี ๆ ก่อน
+แล้วค่อยจ่ายเงินรัน lane openrouter ตอนจะเก็บ baseline จริง ไม่ใช่เอาคะแนนสอง lane มาเทียบกันตรง ๆ
+
+**สาเหตุที่รันไม่ออก บ่อยสุด:**
+
+| อาการ | สาเหตุ |
+|---|---|
+| ต่อ `localhost:11434` ไม่ได้ | ยังไม่ได้ `ollama serve` |
+| บอกว่า tag ไหนไม่มี | ยังไม่ได้ `ollama pull <tag>` หรือพิมพ์ tag ผิด |
+| HTTP 410 | โมเดล `:cloud` ตัวนั้นถูกปลดระวางแล้ว |
+| เครื่องอืด / swap หนัก | ปกติ — ollama ตั้ง workers=1 อยู่แล้ว ปิดแอปอื่นก่อน |
 
 **สร้าง suite ใหม่:**
 
@@ -160,5 +228,6 @@ Case คือไฟล์ JSON หน้าตาแบบนี้:
 **ยังไม่ได้ทำ:**
 - Phase 4: ตรวจ `DEFAULT_MODELS` ใน `harness/run.py` กับ openrouter.ai/models จริงก่อนรัน
   (model id ในโค้ดตอนนี้เป็น placeholder)
-- Phase 5: baseline run จริง (ต้องมี `OPENROUTER_API_KEY` และใช้เงินจริง)
+- Phase 5: baseline run จริง (ต้องมี `OPENROUTER_API_KEY` และใช้เงินจริง) — ซ้อมรอบฟรีด้วย
+  `--backend ollama` ได้ก่อน เพื่อไล่หาเคสที่ prompt กำกวมหรือ rubric ตรวจไม่ได้ (ดูข้อ 3.1)
 - Phase 6: ให้คะแนนด้วยมือ
