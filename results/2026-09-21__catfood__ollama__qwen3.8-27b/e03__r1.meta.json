@@ -1,0 +1,12 @@
+{
+  "suite": "catfood",
+  "backend": "ollama",
+  "model": "qwen3.8:27b",
+  "case": "e03",
+  "repeat": 1,
+  "seconds": 308.5,
+  "prompt_tokens": 54,
+  "completion_tokens": 1862,
+  "max_tokens": 16000,
+  "finish_reason": "stop"
+}
